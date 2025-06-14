@@ -11,6 +11,7 @@ import git
 import numpy as np
 import wandb
 from tqdm import tqdm
+from time import perf_counter
 
 # This is required here by wandb sweeps.
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -84,9 +85,12 @@ def run_exp(args, dataset, model_cls, fold):
     val_acc_history = []
     best_epoch = 0
     bad_counter = 0
+    time_elapsed = 0
 
     for epoch in range(args['epochs']):
+        START = perf_counter()
         train(model, optimizer, data)
+        time_elapsed += (perf_counter() - START)/args['epochs']
 
         [train_acc, val_acc, tmp_test_acc], preds, [
             train_loss, val_loss, tmp_test_loss] = test(model, data)
@@ -117,6 +121,7 @@ def run_exp(args, dataset, model_cls, fold):
     print(f"Fold {fold} | Epochs: {epoch} | Best epoch: {best_epoch}")
     print(f"Test acc: {test_acc:.4f}")
     print(f"Best val acc: {best_val_acc:.4f}")
+    print(f"Average time: {time_elapsed:.4f}")
 
     if "ODE" not in args['model']:
         # Debugging for discrete models
@@ -134,7 +139,7 @@ def run_exp(args, dataset, model_cls, fold):
     wandb.log({'best_test_acc': test_acc, 'best_val_acc': best_val_acc, 'best_epoch': best_epoch})
     keep_running = False if test_acc < args['min_acc'] else True
 
-    return test_acc, best_val_acc, keep_running
+    return test_acc, time_elapsed, best_val_acc, keep_running   
 
 
 if __name__ == '__main__':
@@ -154,8 +159,9 @@ if __name__ == '__main__':
         model_cls = DiscreteDiagSheafDiffusion
     elif args.model == 'BundleSheaf':
         model_cls = DiscreteBundleSheafDiffusion
-    elif args.model == 'SampleBundleSheaf':
-        model_cls = DiscreteSampleBundleSheafDiffusion
+    elif "SampleBundleSheaf" in args.model:
+        k=int(args.model.split("_")[1])
+        model_cls = DiscreteSampleBundleSheafDiffusion(k=k)
     elif args.model == 'GeneralSheaf':
         model_cls = DiscreteGeneralSheafDiffusion
     else:
@@ -185,22 +191,26 @@ if __name__ == '__main__':
     results = []
     print(f"Running with wandb account: {args.entity}")
     print(args)
-    wandb.init(project="sheaf", config=vars(args), entity=args.entity)
+    wandb.init(project="subsheaf", config=vars(args), entity=args.entity)
 
     for fold in tqdm(range(args.folds)):
-        test_acc, best_val_acc, keep_running = run_exp(wandb.config, dataset, model_cls, fold)
-        results.append([test_acc, best_val_acc])
+        test_acc, best_val_acc, keep_running, time_elapsed = run_exp(wandb.config, dataset, model_cls, fold)
+        results.append([test_acc, best_val_acc, time_elapsed])
         if not keep_running:
             break
 
-    test_acc_mean, val_acc_mean = np.mean(results, axis=0) * 100
-    test_acc_std = np.sqrt(np.var(results, axis=0)[0]) * 100
+    test_acc_mean, time_elapsed_mean, val_acc_mean = np.mean(results, axis=0) 
+    test_acc_std, time_elapsed_std = np.sqrt(np.var(results, axis=0)[:-1]) 
 
-    wandb_results = {'test_acc': test_acc_mean, 'val_acc': val_acc_mean, 'test_acc_std': test_acc_std}
+    test_acc_mean *= 100
+    test_acc_std *= 100
+
+    wandb_results = {'test_acc': test_acc_mean, 'val_acc': val_acc_mean, 'test_acc_std': test_acc_std, 'model': args.model, 'dataset': args.dataset, 'time_elapsed': time_elapsed_mean, 'time_elapsed_std': time_elapsed_std}
     wandb.log(wandb_results)
     wandb.finish()
 
     model_name = args.model if args.evectors == 0 else f"{args.model}+LP{args.evectors}"
     print(f'{model_name} on {args.dataset} | SHA: {sha}')
     print(f'Test acc: {test_acc_mean:.4f} +/- {test_acc_std:.4f} | Val acc: {val_acc_mean:.4f}')
+    print(f'Time: {time_elapsed_mean:.4f} +/- {time_elapsed_std:.4f}')
 

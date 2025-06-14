@@ -29,7 +29,6 @@ def get_parser():
     # Model configuration
     parser.add_argument('--d', type=int, default=2)
 
-    parser.add_argument('--k', type=int, default=2)
     parser.add_argument('--sample_budget', type=int, default=10)
     parser.add_argument('--sampler', type=str, choices=["uniform", "random", "spectral"], default="uniform")
 
@@ -66,7 +65,7 @@ def get_parser():
     parser.add_argument('--cuda', type=int, default=0)
     parser.add_argument('--folds', type=int, default=10)
     parser.add_argument('--model', type=str, choices=['DiagSheaf', 'BundleSheaf', 'GeneralSheaf', 'DiagSheafODE',
-                                                      'BundleSheafODE', 'GeneralSheafODE', "SampleBundleSheaf"], default=None)
+                                                      'BundleSheafODE', 'GeneralSheafODE', "SampleBundleSheaf_1", "SampleBundleSheaf_2", "SampleBundleSheaf_4"], default=None)
     parser.add_argument('--entity', type=str, default=None)
     parser.add_argument('--evectors', type=int, default=0, help="Number of Laplacian PE eigenvectors to use.")
 

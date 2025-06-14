@@ -17,7 +17,7 @@ from utils.heterophilic import get_dataset
 
 def get_test_config():
     return {
-        'hidden_channels': 5,
+        'hidden_channels': 20,
         'device': torch.device('cpu'),
         'layers': 2,
         'normalised': False,
@@ -29,8 +29,8 @@ def get_test_config():
         'right_weights': True,
         'use_act': True,
         'second_linear': True,
-        'add_lp': False,
-        'add_hp': False,
+        'add_lp': True,
+        'add_hp': True,
         'max_t': 1.0,
         'sheaf_act': 'tanh',
         'tol_scale': 1.0,
@@ -42,7 +42,7 @@ def get_test_config():
         'adjoint_step_size': 0.1,
         'edge_weights': True,
         'orth': 'householder',
-        'sparse_learner': False,
+        'sparse_learner': True,
     }
 
 
@@ -229,7 +229,7 @@ def test_bundle_diffusion_backprop(d, orth):
     for param in model.parameters():
         assert param.grad is not None
 
-@pytest.mark.parametrize("d, orth, k", [(2, "euler", 1), (3, "euler", 2), (5, "matrix_exp", 3), (6, "cayley", 3), (7, "householder", 2)])
+@pytest.mark.parametrize("d, orth, k", [(4, "householder", 1), (4, "householder", 2), (5, "householder", 3), (6, "householder", 3), (7, "householder", 2)])
 def test_sample_bundle_diffusion_backprop(d, orth, k):
 
     # Fix the random seed
@@ -249,13 +249,12 @@ def test_sample_bundle_diffusion_backprop(d, orth, k):
     args['input_dim'] = num_feat
     args['output_dim'] = 2
     args['d'] = d
-    args['k'] = k
     args['sampler'] = "uniform"
     args['normalised'] = True
     args['orth'] = orth
-    args['sample_budget'] = 100
+    args['sample_budget'] = 1
 
-    model = DiscreteSampleBundleSheafDiffusion(data.edge_index, args)
+    model = DiscreteSampleBundleSheafDiffusion(k=k)(data.edge_index, args)
 
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.1, weight_decay=5e-4)

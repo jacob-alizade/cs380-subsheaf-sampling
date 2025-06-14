@@ -1,13 +1,11 @@
 program: exp/run.py
-method: random 
+method: grid 
 metric:
   name: val_acc
   goal: maximize
 
 parameters:
   epochs:
-    value: 200
-  early_stopping:
     value: 100
   weight_decay:
     value: 0.0005
@@ -16,23 +14,21 @@ parameters:
   model:
     values: ["BundleSheaf", "SampleBundleSheaf_1", "SampleBundleSheaf_2", "SampleBundleSheaf_4"]
   dataset:
-    values: ["texas", "wisconsin", "cornell"] 
+    values: ["texas", "wisconsin", "cora"] 
   d:
-    values: [6, 7, 8]
+    values: [4, 8, 16, 32, 64, 128]
   layers:
-    values: [2, 3, 4, 5, 6]
+    value: 2
   hidden_channels:
-    values: [8, 16, 32]
+    value: 16
   dropout:
-    values: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    value: 0.1
   input_dropout:
-    values: [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
+    value: 0.1
   add_lp:
-    distribution: categorical
-    values: [1, 0]
+    value: 0
   add_hp:
-    distribution: categorical
-    values: [1, 0]
+    value: 0
 command:
   - ${env}
   - python3

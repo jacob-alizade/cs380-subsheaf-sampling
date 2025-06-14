@@ -427,6 +427,7 @@ def mergesp(index1, value1, index2, value2):
     assert index1.dim() == 2 and index2.dim() == 2
     assert value1.dim() == 1 and value2.dim() == 1
     assert index1.size(1) == value1.numel()
+    #print("ASSERT",index2.size(1) ,"==", value2.numel())
     assert index2.size(1) == value2.numel()
     assert index1.size(0) == 2 and index2.size(0) == 2
 
